@@ -1,6 +1,8 @@
 import 'package:flutter/src/foundation/key.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_flutter/values/ShareKey.dart';
 
 class YourControlPage extends StatefulWidget {
   const YourControlPage({Key? key}) : super(key: key);
@@ -11,6 +13,23 @@ class YourControlPage extends StatefulWidget {
 
 class _YourControlPageState extends State<YourControlPage> {
   double sliderValue = 5;
+  late SharedPreferences prefs;
+  @override
+  void initState() {
+    // TODO: implement initState
+    init();
+    super.initState();
+  }
+
+  init() async {
+    prefs = await SharedPreferences.getInstance();
+    int len = prefs.getInt(ShareKeys.COUNTER) ?? 5;
+
+    setState(() {
+      sliderValue = len.toDouble();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,6 +37,11 @@ class _YourControlPageState extends State<YourControlPage> {
           backgroundColor: Colors.blue[100],
           elevation: 0,
           title: Text('English Today'),
+          leading: InkWell(onTap: () async {
+            SharedPreferences pre = await SharedPreferences.getInstance();
+            await pre.setInt(ShareKeys.COUNTER, sliderValue.toInt());
+            Navigator.pop(context);
+          }),
         ),
         body: Container(
           alignment: Alignment.center,

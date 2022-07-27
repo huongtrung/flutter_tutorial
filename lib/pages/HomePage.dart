@@ -3,9 +3,14 @@ import 'dart:math';
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_flutter/models/english_today.dart';
+import 'package:tutorial_flutter/pages/AllWordsPage.dart';
 import 'package:tutorial_flutter/pages/YourControlPage.dart';
+import 'package:tutorial_flutter/values/ShareKey.dart';
 import 'package:tutorial_flutter/widgets/AppButton.dart';
+import 'dart:convert' as convert;
+import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -36,13 +41,18 @@ class _HomePageState extends State<HomePage> {
     return newList;
   }
 
-  getEnglishToday() {
+  getEnglishToday() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int len = prefs.getInt(ShareKeys.COUNTER) ?? 5;
+
     List<String> newList = [];
-    List<int> random = fixedListRandom(len: 5, max1: nouns.length);
+    List<int> random = fixedListRandom(len: len, max1: nouns.length);
     random.forEach((index) {
       newList.add(nouns[index]);
     });
-    words = newList.map((e) => EnglishToday(noun: e)).toList();
+    setState(() {
+      words = newList.map((e) => EnglishToday(noun: e)).toList();
+    });
     print('newList ${words[0]}');
   }
 
@@ -51,8 +61,26 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     // TODO: implement initState
-    getEnglishToday();
     super.initState();
+    getEnglishToday();
+  }
+
+  void main(List<String> arguments) async {
+    // This example uses the Google Books API to search for books about http.
+    // https://developers.google.com/books/docs/overview
+    var url =
+        Uri.https('www.googleapis.com', '/books/v1/volumes', {'q': '{http}'});
+
+    // Await the http get response, then decode the json-formatted response.
+    var response = await http.get(url);
+    if (response.statusCode == 200) {
+      var jsonResponse =
+          convert.jsonDecode(response.body) as Map<String, dynamic>;
+      var itemCount = jsonResponse['totalItems'];
+      print('Number of books about http: $itemCount.');
+    } else {
+      print('Request failed with status: ${response.statusCode}.');
+    }
   }
 
   @override
@@ -202,6 +230,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 Text(
                     'Its amazing how complete is the delusion that beaty is goodness'),
+                buildShowMore()
               ],
             ),
           ),
@@ -221,5 +250,32 @@ class _HomePageState extends State<HomePage> {
               BoxShadow(
                   color: Colors.black38, offset: Offset(2, 3), blurRadius: 3)
             ]));
+  }
+
+  Widget buildShowMore() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      alignment: Alignment.centerLeft,
+      child: InkWell(
+        borderRadius: BorderRadius.all(Radius.circular(24)),
+        overlayColor: MaterialStateProperty.all(Colors.amber),
+        onTap: () {
+          Navigator.push(
+              context, MaterialPageRoute(builder: (_) => AllWordsPage()));
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black38, offset: Offset(2, 3), blurRadius: 3)
+            ],
+            color: Colors.amber,
+            borderRadius: BorderRadius.all(Radius.circular(24)),
+          ),
+          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Text('show more'),
+        ),
+      ),
+    );
   }
 }
